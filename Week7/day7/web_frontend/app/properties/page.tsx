@@ -16,8 +16,6 @@ const VERIFIED_PROPERTY_TYPES = [
   { value: "Farm House", label: "Farm House" },
   { value: "Penthouse", label: "Penthouse" },
   { value: "Room", label: "Room" },
-  { value: "Upper Portion", label: "Upper Portion" },
-  { value: "Lower Portion", label: "Lower Portion" },
 ];
 
 export default function Properties() {
