@@ -50,8 +50,8 @@ class Properties:
         self.rows = [property_row("P-1", 10_000_000), property_row("P-2", 12_000_000)]
         self.catalog_rows = [property_row("W8-1", 10_000_000)]
         self.catalog_rows[0]["available"] = False
-        self.catalog_rows[0]["status"] = "Historical"
-        self.catalog_rows[0]["catalog_total"] = 190_731
+        self.catalog_rows[0]["status"] = "Archived"
+        self.catalog_rows[0]["catalog_total"] = 190_772
         self.search_calls = []
         self.catalog_search_calls = []
 
@@ -150,7 +150,7 @@ def test_catalog_search_includes_unavailable_records_without_exposing_status():
     assert response.json()[0]["property_id"] == "W8-1"
     assert response.json()[0]["available"] is False
     assert response.json()[0]["status"] is None
-    assert response.json()[0]["total_count"] == 190_731
+    assert response.json()[0]["total_count"] == 190_772
 
 
 def test_catalog_property_details_are_browseable_but_not_marked_available():

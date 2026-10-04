@@ -80,7 +80,7 @@ Next.js `NEXT_PUBLIC_*` variables are embedded during the frontend build, so tri
 
 ## Private historical property catalog
 
-The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. The 190,731-row property catalog has `date_added` values from 2018–2019 and does not include a current-availability field. Records remain browseable as catalog listings, but are not marked verified or currently available. The website warns customers that prices and availability may have changed and should be confirmed.
+The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. The property catalog contains 190,772 records: 190,731 imported records plus 41 pre-existing records. The imported CSV has `date_added` values from 2018–2019 and does not include a current-availability field. All catalog records remain browseable, but are not marked currently available. The website warns customers that prices and availability may have changed and should be confirmed.
 
 Keep the private property file outside Git, allowlist your current IP in Neon if needed, and run the migration from the repository root with a local `DATABASE_URL` and `WEEK8_CSV_PATH`:
 
@@ -91,7 +91,7 @@ Remove-Item Env:WEEK8_CSV_PATH
 Remove-Item Env:DATABASE_URL
 ```
 
-Set `DATABASE_URL` in the local PowerShell environment without putting its value in command history or sharing it. The migration prints aggregate counts only, archives older property records, marks the imported catalog historical/unavailable, and preserves user/CRM records. Remove any temporary Neon IP allowlist entry after seeding.
+Set `DATABASE_URL` in the local PowerShell environment without putting its value in command history or sharing it. The migration prints aggregate counts only, retains older property records, marks the imported catalog historical/unavailable, and preserves user/CRM records. Remove any temporary Neon IP allowlist entry after seeding.
 
 Finally, verify `/health` on the four APIs, register and sign in through the website, get a Week 8 valuation and lead score, and perform a real appointment booking/reschedule/cancel. Property search requires the optional catalog to be imported. Confirm both agent and customer email delivery, the Google Calendar event, and a Vapi hot-lead alert. A green health check does not prove those external operations work.
 

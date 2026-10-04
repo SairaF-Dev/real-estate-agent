@@ -287,7 +287,7 @@ FROM properties p
 JOIN locations l ON l.location_id = p.location_id
 JOIN prices pr ON pr.property_id = p.property_id
 LEFT JOIN amenities a ON a.property_id = p.property_id
-WHERE p.status = 'Historical'
+WHERE p.status IN ('Historical', 'Archived')
   AND pr.verification_status = 'Historical'
   AND (%(budget)s::numeric IS NULL OR pr.price <= %(budget)s::numeric)
   AND (%(city)s::text IS NULL OR LOWER(l.city) = LOWER(%(city)s::text))
@@ -333,7 +333,7 @@ FROM properties p
 JOIN locations l ON l.location_id = p.location_id
 JOIN prices pr ON pr.property_id = p.property_id
 WHERE p.property_id = %(property_id)s::text
-  AND p.status = 'Historical'
+  AND p.status IN ('Historical', 'Archived')
   AND pr.verification_status = 'Historical';
 
 -- ============================================================
