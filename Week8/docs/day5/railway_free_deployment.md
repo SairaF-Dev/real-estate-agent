@@ -2,7 +2,7 @@
 
 This is a manual setup guide for the Week 7 + Week 8 monorepo. It does not contain credentials. Add all secrets in Railway service variables, not in Git or chat.
 
-The public repository intentionally excludes property and lead data files. Week 8 model inference can run without them, but catalog-backed search, comparable-property, market-statistics, and lead-list endpoints will have no records until data is supplied privately and with redistribution rights.
+The public repository intentionally excludes property and lead data files. The Week 8 property catalog contains listing dates from 2018–2019, so it is imported only as historical, unavailable reference data. The migration archives older listings and preserves CRM records; it does not create placeholder agent contacts. Public property search remains empty until current listings with redistribution rights are supplied and reviewed.
 
 ## Cost and runtime limits
 
@@ -78,11 +78,11 @@ Generate public domains for `Week8API`, `Week7API`, `VapiWebhook`, and `Website`
 
 Next.js `NEXT_PUBLIC_*` variables are embedded during the frontend build, so trigger a redeploy after setting or changing them. Configure the Vapi assistant's server/webhook URL as the public `VapiWebhook` URL and its secret header to match `VAPI_WEBHOOK_SECRET`. If using the assistant setup script, also set `VAPI_API_KEY` and `VAPI_ASSISTANT_ID` only in the private service environment.
 
-## Optional private property catalog
+## Private historical property catalog
 
-The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. Until an authorized data file is provided and imported privately, model valuation and lead scoring can run, but catalog-backed endpoints return no records.
+The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. The Week 8 catalog is dated 2018–2019; importing it stores historical records in Neon but intentionally does not make them available through public search. Current listings must be supplied and checked for current availability and pricing before they are exposed to customers.
 
-If you have redistribution rights for a property catalog, keep the file outside Git, allowlist your current IP in Neon if needed, and run the migration from the repository root with a local `DATABASE_URL` and `WEEK8_CSV_PATH`:
+Keep the Week 8 file outside Git, allowlist your current IP in Neon if needed, and run the migration from the repository root with a local `DATABASE_URL` and `WEEK8_CSV_PATH`:
 
 ```powershell
 $env:WEEK8_CSV_PATH = (Resolve-Path "C:\private-data\properties_clean.csv").Path
@@ -91,7 +91,7 @@ Remove-Item Env:WEEK8_CSV_PATH
 Remove-Item Env:DATABASE_URL
 ```
 
-Set `DATABASE_URL` in the local PowerShell environment without putting its value in command history or sharing it. The migration prints only that a configured connection is being used, not the connection string. Remove any temporary Neon IP allowlist entry after seeding.
+Set `DATABASE_URL` in the local PowerShell environment without putting its value in command history or sharing it. The migration prints aggregate counts only, archives older property records, marks the imported catalog historical/unavailable, and preserves user/CRM records. Remove any temporary Neon IP allowlist entry after seeding.
 
 Finally, verify `/health` on the four APIs, register and sign in through the website, get a Week 8 valuation and lead score, and perform a real appointment booking/reschedule/cancel. Property search requires the optional catalog to be imported. Confirm both agent and customer email delivery, the Google Calendar event, and a Vapi hot-lead alert. A green health check does not prove those external operations work.
 

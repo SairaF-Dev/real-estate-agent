@@ -68,6 +68,7 @@ LEFT JOIN developers d
     ON p.developer_id = d.developer_id
 
 WHERE p.property_id = %(property_id)s::text
+  AND p.available = TRUE
   AND pr.verification_status = 'Verified';
 
 
@@ -113,6 +114,7 @@ LEFT JOIN developers d
 
 WHERE LOWER(TRIM(p.name))
         = LOWER(TRIM(%(property_name)s::text))
+  AND p.available = TRUE
   AND pr.verification_status = 'Verified'
 
 ORDER BY
@@ -325,7 +327,8 @@ FROM properties p
 LEFT JOIN developers d
     ON p.developer_id = d.developer_id
 
-WHERE p.property_id = %(property_id)s::text;
+WHERE p.property_id = %(property_id)s::text
+  AND p.available = TRUE;
 
 
 -- ============================================================
@@ -516,6 +519,7 @@ JOIN properties p
     ON p.property_id = ap.property_id
 
 WHERE ap.property_id = %(property_id)s::text
+  AND p.available = TRUE
   AND LOWER(a.status) = 'active'
 
 ORDER BY

@@ -1,10 +1,8 @@
 """
-Week 8 to Week 7 Database Catalog Migration Script
+Import the Week 8 catalog into PostgreSQL as historical, non-public data.
 
-Migrates the expanded Week 8 property catalog (190,731 listings across
-Lahore, Karachi, Islamabad, Rawalpindi, Faisalabad) into PostgreSQL (real_estate),
-while preserving 100% of existing user accounts, sessions, CRM preferences,
-appointments, and the 41 original Week 7 properties.
+Existing user accounts, sessions, CRM records, appointments, and historical
+property references are preserved. Existing Week 7 properties are archived.
 
 Usage:
     python migrate_week8_catalog.py
@@ -12,13 +10,11 @@ Usage:
 
 from __future__ import annotations
 
-import datetime
 from decimal import Decimal
 import hashlib
 import os
 from pathlib import Path
 import re
-import sys
 import time
 
 import pandas as pd
@@ -38,51 +34,6 @@ CITY_PREFIXES = {
     "Faisalabad": "FSD",
 }
 
-# New Agents for Rawalpindi & Faisalabad to ensure 100% agent coverage across all 5 cities
-ADDITIONAL_AGENTS = [
-    (
-        "AGT-017",
-        "Zubair Khan",
-        "+923011234567",
-        "zubair.khan@netixsol.com",
-        "Rawalpindi",
-        "Bahria Town",
-        "Residential Sales and Rentals",
-        "Active",
-    ),
-    (
-        "AGT-018",
-        "Nida Tariq",
-        "+923021234567",
-        "nida.tariq@netixsol.com",
-        "Rawalpindi",
-        "Saddar",
-        "Residential and Commercial",
-        "Active",
-    ),
-    (
-        "AGT-019",
-        "Waqas Butt",
-        "+923031234567",
-        "waqas.butt@netixsol.com",
-        "Faisalabad",
-        "Madina Town",
-        "Residential Sales",
-        "Active",
-    ),
-    (
-        "AGT-020",
-        "Anum Sheikh",
-        "+923041234567",
-        "anum.sheikh@netixsol.com",
-        "Faisalabad",
-        "D Ground",
-        "Residential Sales and Rentals",
-        "Active",
-    ),
-]
-
-
 def make_clean_slug(text: str) -> str:
     """Creates an uppercase alphanumeric slug with dashes."""
     cleaned = re.sub(r"[^a-zA-Z0-9]+", "-", str(text).strip()).strip("-").upper()
@@ -94,7 +45,7 @@ def run_migration():
     if not db_url:
         raise RuntimeError("DATABASE_URL must be configured before running the catalog migration")
     print("=" * 70)
-    print("WEEK 8 -> WEEK 7 PROPERTY CATALOG MIGRATION")
+    print("IMPORTING WEEK 8 HISTORICAL PROPERTY CATALOG")
     print("=" * 70)
     print("Target Database: configured PostgreSQL connection")
     print(f"Source Dataset:  {WEEK8_CSV_PATH}")
@@ -118,35 +69,19 @@ def run_migration():
             initial_prefs = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM properties WHERE property_id NOT LIKE 'W8-%';")
             initial_w7_props = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM prices WHERE property_id NOT LIKE 'W8-%';")
+            initial_w7_prices = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM properties WHERE property_id LIKE 'W8-%';")
+            if cur.fetchone()[0]:
+                raise RuntimeError(
+                    "Week 8 properties already exist. Refusing to replace rows with "
+                    "possible customer-history references."
+                )
 
             print(f"  auth_users:           {initial_users}")
             print(f"  customers:            {initial_customers}")
             print(f"  customer_preferences: {initial_prefs}")
-            print(f"  Week 7 properties:    {initial_w7_props}")
-
-            # ---------------------------------------------------------
-            # 1. EXPAND AGENTS
-            # ---------------------------------------------------------
-            print("\n[Step 1] Ensuring agent coverage for all 5 cities...")
-            for agent in ADDITIONAL_AGENTS:
-                cur.execute(
-                    """
-                    INSERT INTO agents (agent_id, name, phone, email, city, area, specialization, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (agent_id) DO NOTHING;
-                    """,
-                    agent,
-                )
-
-            # Map agents by city
-            cur.execute("SELECT agent_id, city FROM agents WHERE status = 'Active';")
-            city_agents: dict[str, list[str]] = {}
-            for agent_id, city in cur.fetchall():
-                city_agents.setdefault(city, []).append(agent_id)
-
-            print(f"  Active agents mapped: {sum(len(v) for v in city_agents.values())} across {len(city_agents)} cities:")
-            for city, agts in city_agents.items():
-                print(f"    - {city}: {agts}")
+            print(f"  Existing properties to archive: {initial_w7_props}")
 
             # ---------------------------------------------------------
             # 2. READ CSV AND MAP LOCATIONS
@@ -212,12 +147,22 @@ def run_migration():
             # ---------------------------------------------------------
             # 3. CLEAN PRIOR W8 RECORDS (IDEMPOTENCY)
             # ---------------------------------------------------------
-            print("\n[Step 3] Cleaning any existing W8-% records for idempotent migration...")
-            cur.execute("DELETE FROM agent_properties WHERE property_id LIKE 'W8-%';")
-            cur.execute("DELETE FROM amenities WHERE property_id LIKE 'W8-%';")
-            cur.execute("DELETE FROM prices WHERE property_id LIKE 'W8-%';")
-            cur.execute("DELETE FROM properties WHERE property_id LIKE 'W8-%';")
-            print("  [OK] Existing W8-% records cleared.")
+            print("\n[Step 3] Archiving previous catalog records...")
+            cur.execute(
+                """
+                UPDATE properties
+                SET available = FALSE, status = 'Archived'
+                WHERE property_id NOT LIKE 'W8-%';
+                """
+            )
+            cur.execute(
+                """
+                UPDATE prices
+                SET verification_status = 'Historical'
+                WHERE property_id NOT LIKE 'W8-%';
+                """
+            )
+            print("  [OK] Old listings archived; historical records remain intact.")
 
             # ---------------------------------------------------------
             # 4. PREPARE STREAMING DATA
@@ -230,10 +175,7 @@ def run_migration():
             amenity_rows = []
             agent_prop_rows = []
 
-            # Track agent assignment round-robin per city
-            agent_counters: dict[str, int] = {c: 0 for c in city_agents}
-
-            for idx, r in df.iterrows():
+            for _, r in df.iterrows():
                 p_num = int(r["property_id"])
                 p_id = f"W8-{p_num}"
                 city = str(r["city"]).strip()
@@ -262,13 +204,6 @@ def run_migration():
                 covered_area = float(r["covered_area_sqft"])
                 covered_area_unit = "sqft"
 
-                # Date parsing
-                dt_str = str(r["date_added"]).strip() if pd.notna(r["date_added"]) else None
-                try:
-                    verified_on = datetime.date.fromisoformat(dt_str) if dt_str else datetime.date.today()
-                except Exception:
-                    verified_on = datetime.date.today()
-
                 # Properties row
                 prop_rows.append((
                     p_id,
@@ -281,8 +216,8 @@ def run_migration():
                     plot_unit,
                     covered_area,
                     covered_area_unit,
-                    True,            # available
-                    "Available",     # status
+                    False,           # historical listings are not current inventory
+                    "Historical",    # status
                     None,            # developer_id
                     purpose_val,     # purpose
                 ))
@@ -295,8 +230,8 @@ def run_migration():
                     "PKR",
                     purpose_val,
                     price_period,
-                    verified_on,
-                    "Verified",
+                    None,
+                    "Historical",
                 ))
 
                 # Amenities rows
@@ -310,19 +245,6 @@ def run_migration():
                     amenity_rows.append((p_id, "Community Park", None))
                 if r.get("is_furnished") == 1:
                     amenity_rows.append((p_id, "Furnished", None))
-
-                # Agent property assignment
-                c_agents = city_agents.get(city) or city_agents.get("Lahore", ["AGT-001"])
-                c_idx = agent_counters[city] % len(c_agents)
-                agent_counters[city] += 1
-                assigned_agent = c_agents[c_idx]
-
-                agent_prop_rows.append((
-                    assigned_agent,
-                    p_id,
-                    "Primary",
-                    verified_on,
-                ))
 
             print(f"  Transform complete in {time.time() - t_transform:.2f}s:")
             print(f"    - Properties:       {len(prop_rows):,}")
@@ -400,18 +322,32 @@ def run_migration():
             )
             print("  [OK] Index idx_agent_properties_property verified.")
 
-            # Commit the transaction
-            conn.commit()
-            print("\n[COMMIT] Transaction successfully committed to PostgreSQL!")
-
             # ---------------------------------------------------------
-            # 7. POST-MIGRATION VERIFICATION & REPOSITORY TEST
+            # 7. VERIFY BEFORE COMMITTING
             # ---------------------------------------------------------
             print("\n[Step 7] Running post-migration verification...")
             cur.execute("SELECT count(*) FROM properties;")
             final_props = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM prices;")
             final_prices = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM properties WHERE property_id LIKE 'W8-%';")
+            final_w8_props = cur.fetchone()[0]
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM properties
+                WHERE available = TRUE;
+                """
+            )
+            available_props = cur.fetchone()[0]
+            cur.execute(
+                """
+                SELECT count(*)
+                FROM prices
+                WHERE property_id LIKE 'W8-%' AND verification_status = 'Historical';
+                """
+            )
+            historical_w8_prices = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM amenities;")
             final_amenities = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM agent_properties;")
@@ -424,42 +360,31 @@ def run_migration():
             cur.execute("SELECT count(*) FROM customer_preferences;")
             final_prefs = cur.fetchone()[0]
 
-            print(f"  Total properties in DB: {final_props:,} (expected {len(df) + initial_w7_props:,})")
-            print(f"  Total prices in DB:     {final_prices:,} (expected {len(df) + initial_w7_props:,})")
+            print(f"  Historical Week 8 properties: {final_w8_props:,}")
+            print(f"  Historical Week 8 prices:     {historical_w8_prices:,}")
+            print(f"  Available properties:         {available_props:,}")
             print(f"  Total amenities in DB:  {final_amenities:,}")
             print(f"  Total agent properties: {final_agent_props:,}")
 
             assert final_props == len(df) + initial_w7_props, "Property count mismatch!"
-            assert final_prices == len(df) + initial_w7_props, "Price count mismatch!"
+            assert final_prices == len(df) + initial_w7_prices, "Price count mismatch!"
+            assert final_w8_props == len(df), "Week 8 property count mismatch!"
+            assert historical_w8_prices == len(df), "Week 8 historical price count mismatch!"
+            assert available_props == 0, "Historical properties remain marked available!"
             assert final_users == initial_users, "auth_users altered!"
             assert final_customers == initial_customers, "customers altered!"
             assert final_prefs == initial_prefs, "customer_preferences altered!"
 
-            print("  [OK] 100% CRM and User data integrity confirmed.")
+            print("  [OK] CRM and user data preserved; imported listings remain historical.")
+
+            conn.commit()
+            print("\n[COMMIT] Transaction successfully committed to PostgreSQL!")
 
     finally:
         conn.close()
 
-    # Verify repository methods with the new database
-    print("\n[Step 8] Verifying PostgresPropertyRepository retrieval...")
-    sys.path.append(r"E:\Netixsol\Week7\day2\03_structured_retrieval")
-    from postgres_repository import PostgresPropertyRepository
-
-    repo = PostgresPropertyRepository(db_url)
-    cities = repo.list_available_cities()
-    print(f"  Available cities reported by repository: {cities}")
-    expected_cities = {"Faisalabad", "Islamabad", "Karachi", "Lahore", "Rawalpindi"}
-    assert set(cities) == expected_cities, f"Expected cities {expected_cities}, got {cities}"
-
-    # Search in each city
-    for c in sorted(expected_cities):
-        results = repo.search(city=c, limit=3)
-        print(f"  Sample search in {c}: {len(results)} matches found")
-        for res in results:
-            print(f"    - {res['property_id']}: {res['property_name']} | {res['price']:,} {res['currency']}")
-
     print("\n" + "=" * 70)
-    print("MIGRATION COMPLETED SUCCESSFULLY WITH ZERO REGRESSIONS")
+    print("HISTORICAL CATALOG IMPORT COMPLETED")
     print("=" * 70)
 
 
