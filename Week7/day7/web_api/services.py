@@ -30,6 +30,8 @@ def public_property(row: dict[str, Any]) -> dict[str, Any]:
     result["amenities"] = list(result["amenities"] or [])
     result["available"] = bool(result["available"])
     result["currency"] = result["currency"] or "PKR"
+    if result["status"] == "Historical":
+        result["status"] = None
     return result
 
 

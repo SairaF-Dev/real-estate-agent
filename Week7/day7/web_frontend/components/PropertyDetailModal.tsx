@@ -423,9 +423,9 @@ export function PropertyDetailModal({
                   padding: "10px 12px",
                 }}
               >
-                <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>MLS Status</div>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>Availability</div>
                 <div style={{ fontSize: "0.95rem", fontWeight: 700, color: property.available ? "#16a34a" : "#b91c1c", marginTop: "2px" }}>
-                  {property.available ? "Active & Available" : "Under Contract"}
+                  {property.available ? "Available" : "Please confirm"}
                 </div>
               </div>
 

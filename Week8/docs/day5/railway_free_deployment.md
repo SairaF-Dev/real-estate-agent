@@ -80,9 +80,9 @@ Next.js `NEXT_PUBLIC_*` variables are embedded during the frontend build, so tri
 
 ## Private historical property catalog
 
-The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. The Week 8 catalog is dated 2018–2019; importing it stores historical records in Neon but intentionally does not make them available through public search. Current listings must be supplied and checked for current availability and pricing before they are exposed to customers.
+The Week 7 API creates its schema at startup, and Day 4 initializes its tables. No property or lead CSVs are included in the public repository. The 190,731-row property catalog has `date_added` values from 2018–2019 and does not include a current-availability field. Records remain browseable as catalog listings, but are not marked verified or currently available. The website warns customers that prices and availability may have changed and should be confirmed.
 
-Keep the Week 8 file outside Git, allowlist your current IP in Neon if needed, and run the migration from the repository root with a local `DATABASE_URL` and `WEEK8_CSV_PATH`:
+Keep the private property file outside Git, allowlist your current IP in Neon if needed, and run the migration from the repository root with a local `DATABASE_URL` and `WEEK8_CSV_PATH`:
 
 ```powershell
 $env:WEEK8_CSV_PATH = (Resolve-Path "C:\private-data\properties_clean.csv").Path

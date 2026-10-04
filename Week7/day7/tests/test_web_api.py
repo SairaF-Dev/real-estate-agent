@@ -48,7 +48,12 @@ class Customers:
 class Properties:
     def __init__(self):
         self.rows = [property_row("P-1", 10_000_000), property_row("P-2", 12_000_000)]
+        self.catalog_rows = [property_row("W8-1", 10_000_000)]
+        self.catalog_rows[0]["available"] = False
+        self.catalog_rows[0]["status"] = "Historical"
+        self.catalog_rows[0]["catalog_total"] = 190_731
         self.search_calls = []
+        self.catalog_search_calls = []
 
     def list_available_cities(self):
         return ["Lahore"]
@@ -57,8 +62,15 @@ class Properties:
         self.search_calls.append(kwargs)
         return [dict(row) for row in self.rows]
 
+    def search_catalog(self, **kwargs):
+        self.catalog_search_calls.append(kwargs)
+        return [dict(row) for row in self.catalog_rows]
+
     def get_property(self, property_id):
         return next((dict(row) for row in self.rows if row["property_id"] == property_id), None)
+
+    def get_catalog_property(self, property_id):
+        return next((dict(row) for row in self.catalog_rows if row["property_id"] == property_id), None)
 
 
 class Interactions:
@@ -129,14 +141,24 @@ def test_preference_cross_field_budget_validation():
     assert client.patch(f"/api/customers/{CUSTOMER_ID}/preferences", json={"budget_min": 30_000_000}).status_code == 422
 
 
-def test_verified_property_search_uses_repository_and_filters_internal_fields():
+def test_catalog_search_includes_unavailable_records_without_exposing_status():
     client, services = make_client()
-    services.properties.rows[0]["_ml_probability"] = 0.99
-    response = client.post("/api/properties/search", json={"customer_id": CUSTOMER_ID, "limit": 5})
+    response = client.post("/api/properties/search", json={"customer_id": CUSTOMER_ID, "limit": 5, "offset": 24})
     assert response.status_code == 200
-    assert services.properties.search_calls[0]["city"] == "Lahore"
-    assert "_ml_probability" not in response.text
-    assert response.json()[0]["property_id"] == "P-1"
+    assert services.properties.catalog_search_calls[0]["city"] == "Lahore"
+    assert services.properties.catalog_search_calls[0]["offset"] == 24
+    assert response.json()[0]["property_id"] == "W8-1"
+    assert response.json()[0]["available"] is False
+    assert response.json()[0]["status"] is None
+    assert response.json()[0]["total_count"] == 190_731
+
+
+def test_catalog_property_details_are_browseable_but_not_marked_available():
+    client, _ = make_client()
+    response = client.get("/api/properties/W8-1")
+    assert response.status_code == 200
+    assert response.json()["available"] is False
+    assert response.json()["status"] is None
 
 
 def test_recommendation_modes_and_same_verified_candidate_pool():

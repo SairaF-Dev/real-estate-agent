@@ -311,7 +311,7 @@ def create_app(services: WebServices | None = None) -> FastAPI:
     @app.post("/api/properties/search", response_model=list[PropertyResponse])
     async def search_properties(payload: PropertySearchRequest, request: Request):
         services = svc(request)
-        filters = payload.model_dump(exclude={"customer_id", "limit"}, exclude_none=True)
+        filters = payload.model_dump(exclude={"customer_id", "limit", "offset"}, exclude_none=True)
         if payload.customer_id:
             authorize_customer(request, payload.customer_id)
             context = await asyncio.to_thread(services.customers.resolve_for_customer_id, str(payload.customer_id))
@@ -323,10 +323,30 @@ def create_app(services: WebServices | None = None) -> FastAPI:
                     if value not in (None, []):
                         filters.setdefault(field, value)
         try:
-            rows = await asyncio.to_thread(services.properties.search, budget=filters.pop("budget_max", None), limit=payload.limit, **filters)
-            return [public_property(row) for row in rows]
+            rows = await asyncio.to_thread(
+                services.properties.search_catalog,
+                budget=filters.pop("budget_max", None),
+                limit=payload.limit,
+                offset=payload.offset,
+                **filters,
+            )
+            total_count = int(rows[0].get("catalog_total", 0)) if rows else 0
+            return [{**public_property(row), "total_count": total_count} for row in rows]
         except Exception:
             raise HTTPException(503, "Property search is temporarily unavailable")
+
+    @app.get("/api/properties/{property_id}", response_model=PropertyResponse)
+    async def get_property(property_id: str, request: Request):
+        properties = svc(request).properties
+        try:
+            row = await asyncio.to_thread(properties.get_property, property_id)
+            if row is None:
+                row = await asyncio.to_thread(properties.get_catalog_property, property_id)
+        except Exception:
+            raise HTTPException(503, "Property details are temporarily unavailable")
+        if not row:
+            raise HTTPException(404, "Property was not found")
+        return public_property(row)
 
     @app.post("/api/customers/{customer_id}/recommendations", response_model=RecommendationResponse)
     async def recommendations(customer_id: UUID, payload: RecommendationRequest, request: Request):

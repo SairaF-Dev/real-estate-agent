@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
-import { mlApi, type Week8Property } from "@/lib/mlApi";
 import { useSession } from "@/components/SessionProvider";
 import { PropertyCard, getPropertyPhoto, formatPakistaniPrice } from "@/components/PropertyCard";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
@@ -11,42 +10,23 @@ import type { Property, SearchFilters } from "@/types/api";
 
 const VERIFIED_PROPERTY_TYPES = [
   { value: "House", label: "House" },
-  { value: "Flat", label: "Flat / Apartment" },
+  { value: "Apartment", label: "Flat / Apartment" },
   { value: "Upper Portion", label: "Upper Portion" },
   { value: "Lower Portion", label: "Lower Portion" },
   { value: "Farm House", label: "Farm House" },
   { value: "Penthouse", label: "Penthouse" },
   { value: "Room", label: "Room" },
+  { value: "Upper Portion", label: "Upper Portion" },
+  { value: "Lower Portion", label: "Lower Portion" },
 ];
-
-function toProperty(w8: Week8Property): Property {
-  return {
-    property_id: w8.property_id,
-    property_name: w8.property_name,
-    city: w8.city,
-    area: w8.location,
-    price: w8.price,
-    currency: "PKR",
-    bedrooms: w8.bedrooms ?? null,
-    bathrooms: w8.bathrooms ?? w8.baths ?? null,
-    property_type: w8.property_type,
-    purpose: w8.purpose,
-    amenities: [
-      w8.area,
-      w8.agency ? `Agency: ${w8.agency}` : "Listing agency not provided",
-      w8.province_name,
-    ].filter(Boolean),
-    available: w8.available ?? true,
-    status: w8.status || "Available",
-  };
-}
 
 export default function Properties() {
   const { customer } = useSession();
   const [rows, setRows] = useState<Property[] | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   // Filter State
   const [city, setCity] = useState("");
@@ -64,46 +44,24 @@ export default function Properties() {
       bedrooms?: number;
       propertyType?: string;
       purpose?: string;
+      offset?: number;
     }) => {
       setBusy(true);
       setError("");
 
       try {
-        let loaded = false;
-        try {
-          // Query Week 8 verified dataset
-          const res = await mlApi.getProperties({
-            city: filters.city || undefined,
-            location: filters.area || undefined,
-            max_price: filters.budgetMax,
-            bedrooms: filters.bedrooms,
-            property_type: filters.propertyType || undefined,
-            purpose: filters.purpose || undefined,
-            limit: 24,
-          });
+        const body: SearchFilters = { customer_id: customer?.customer_id, limit: 24, offset: filters.offset ?? 0 };
+        if (filters.city) body.city = filters.city;
+        if (filters.area) body.area = filters.area;
+        if (filters.budgetMax) body.budget_max = filters.budgetMax;
+        if (filters.bedrooms) body.bedrooms = filters.bedrooms;
+        if (filters.propertyType) body.property_type = filters.propertyType;
+        if (filters.purpose) body.purpose = filters.purpose;
 
-          if (res?.properties) {
-            setRows(res.properties.map(toProperty));
-            setTotalCount(res.total);
-            loaded = true;
-          }
-        } catch {
-          // Fallback to standard property search
-        }
-
-        if (!loaded) {
-          const body: SearchFilters = { customer_id: customer?.customer_id, limit: 24 };
-          if (filters.city) body.city = filters.city;
-          if (filters.area) body.area = filters.area;
-          if (filters.budgetMax) body.budget_max = filters.budgetMax;
-          if (filters.bedrooms) body.bedrooms = filters.bedrooms;
-          if (filters.propertyType) body.property_type = filters.propertyType;
-          if (filters.purpose) body.purpose = filters.purpose;
-
-          const fallback = await api.searchProperties(body);
-          setRows(fallback);
-          setTotalCount(fallback.length);
-        }
+        const results = await api.searchProperties(body);
+        setRows(results);
+        setTotalCount(results[0]?.total_count ?? 0);
+        setOffset(filters.offset ?? 0);
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Could not search properties.");
       } finally {
@@ -125,15 +83,18 @@ export default function Properties() {
     const propId = urlParams.get("id");
     if (!propId) return;
 
-    mlApi.getProperty(propId)
+    api.getProperty(propId)
       .then((p) => {
-        if (p) setModalProperty(toProperty(p));
+        setModalProperty(p);
       })
-      .catch(() => {});
+      .catch((e) => {
+        setError(e instanceof ApiError && e.status === 404 ? "This listing could not be found." : "Could not load this property.");
+      });
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setOffset(0);
     void search({
       city: city.trim() || undefined,
       area: area.trim() || undefined,
@@ -141,6 +102,7 @@ export default function Properties() {
       bedrooms: bedrooms ? Number(bedrooms) : undefined,
       propertyType: propertyType || undefined,
       purpose: purpose || undefined,
+      offset: 0,
     });
   };
 
@@ -151,6 +113,9 @@ export default function Properties() {
         <h1>Explore Properties</h1>
         <p>
           Browse property listings from across Pakistan and explore indicative price insights.
+        </p>
+        <p role="note" style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", borderRadius: "8px", background: "#fff8e7", color: "#72521d", fontSize: "0.9rem" }}>
+          Prices and availability may have changed. Please confirm the latest details before making a decision.
         </p>
       </div>
 
@@ -201,19 +166,18 @@ export default function Properties() {
           onChange={(e) => setPurpose(e.target.value)}
         >
           <option value="">Any purpose</option>
-          <option value="For Sale">For Sale / Purchase</option>
-          <option value="For Rent">For Rent</option>
+          <option value="purchase">For Sale / Purchase</option>
+          <option value="rental">For Rent</option>
         </select>
         <button type="submit" className="primary" disabled={busy}>
           {busy ? "Searching…" : "Search"}
         </button>
       </form>
 
-      {totalCount !== null && (
+      {rows !== null && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", color: "var(--color-muted)", fontSize: "0.875rem" }}>
           <span>
-            Showing <strong>{rows?.length || 0}</strong> property listings
-            {totalCount > (rows?.length || 0) && ` of ${totalCount.toLocaleString()} total`}
+            Showing <strong>{totalCount === 0 ? 0 : offset + 1}–{Math.min(offset + rows.length, totalCount)}</strong> of {totalCount.toLocaleString()} listings
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
@@ -225,7 +189,7 @@ export default function Properties() {
       {busy && <Loading label="Searching property listings…" />}
       {error && <ErrorNotice message={error} />}
       {rows?.length === 0 && !busy && (
-        <Empty title="No matching listings found" text="Try a broader city, area, budget or property type." />
+        <Empty title="No properties match your search" text="Try a broader location or different filters." />
       )}
 
       <div className="property-grid">
@@ -233,6 +197,13 @@ export default function Properties() {
           <PropertyCard key={x.property_id} property={x} />
         ))}
       </div>
+      {totalCount > 24 && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", margin: "1.5rem 0" }}>
+          <button type="button" className="primary" disabled={busy || offset === 0} onClick={() => void search({ city: city.trim() || undefined, area: area.trim() || undefined, budgetMax: budgetMax ? Number(budgetMax) : undefined, bedrooms: bedrooms ? Number(bedrooms) : undefined, propertyType: propertyType || undefined, purpose: purpose || undefined, offset: Math.max(0, offset - 24) })}>Previous</button>
+          <span>Page {Math.floor(offset / 24) + 1} of {Math.ceil(totalCount / 24).toLocaleString()}</span>
+          <button type="button" className="primary" disabled={busy || offset + 24 >= totalCount} onClick={() => void search({ city: city.trim() || undefined, area: area.trim() || undefined, budgetMax: budgetMax ? Number(budgetMax) : undefined, bedrooms: bedrooms ? Number(bedrooms) : undefined, propertyType: propertyType || undefined, purpose: purpose || undefined, offset: offset + 24 })}>Next</button>
+        </div>
+      )}
 
       {modalProperty && (
         <PropertyDetailModal

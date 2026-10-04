@@ -238,12 +238,12 @@ export function PropertyCard({ property, actions }: { property: Property; action
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                background: "#16a34a",
+                background: property.available ? "#16a34a" : "#d97706",
                 display: "inline-block",
                 boxShadow: "0 0 6px rgba(22, 163, 74, 0.8)",
               }}
             />
-            Listing
+            {property.available ? "Listing" : "Confirm details"}
           </span>
 
           {/* Bottom-left: Property Type overlay chip */}

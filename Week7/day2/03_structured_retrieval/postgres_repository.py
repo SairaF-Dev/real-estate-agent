@@ -100,6 +100,8 @@ class PostgresPropertyRepository:
         "exact_property",
         "property_name_lookup",
         "buyer_search",
+        "browse_catalog",
+        "browse_catalog_property",
         "availability",
         "developer_lookup",
         "cheaper_alternatives",
@@ -696,6 +698,63 @@ class PostgresPropertyRepository:
                     cur,
                     rows,
                 )
+
+    def search_catalog(
+        self,
+        budget=None,
+        city=None,
+        area=None,
+        bedrooms=None,
+        property_type=None,
+        purpose=None,
+        amenities=None,
+        limit: int = DEFAULT_SEARCH_LIMIT,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Browse historical catalog records without marking them current."""
+        budget = self._validate_optional_budget(budget)
+        city = self._validate_optional_string(city, "city")
+        area = self._validate_optional_string(area, "area")
+        bedrooms = self._validate_optional_integer(bedrooms, "bedrooms")
+        property_type = self._validate_optional_string(property_type, "property_type")
+        purpose = self._validate_optional_string(purpose, "purpose")
+        amenities = self._validate_amenities(amenities)
+        limit = self._validate_limit(limit)
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise ValueError("offset must be a non-negative integer")
+
+        params = {
+            "budget": budget,
+            "city": city,
+            "area": area,
+            "area_pattern": f"%{area}%" if area else None,
+            "bedrooms": bedrooms,
+            "property_type": property_type,
+            "purpose": purpose,
+            "amenities": amenities,
+            "limit": limit,
+            "offset": offset,
+        }
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(self._get_query("browse_catalog"), params)
+                return self._rows_to_dicts(cur, cur.fetchall())
+
+    def get_catalog_property(self, property_id: str) -> dict[str, Any] | None:
+        """Return a catalog record for browsing, including unverified records."""
+        if not isinstance(property_id, str):
+            raise TypeError("property_id must be a string")
+        property_id = property_id.strip()
+        if not property_id:
+            raise ValueError("property_id is required")
+
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    self._get_query("browse_catalog_property"),
+                    {"property_id": property_id},
+                )
+                return self._row_to_dict(cur, cur.fetchone())
 
     @staticmethod
     def compute_distance_metrics(

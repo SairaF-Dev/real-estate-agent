@@ -262,6 +262,79 @@ ORDER BY
 
 LIMIT %(limit)s;
 
+-- QUERY: browse_catalog
+-- Browse catalog records separately from verified, available search.
+SELECT
+    COUNT(*) OVER() AS catalog_total,
+    p.property_id,
+    p.name AS property_name,
+    l.area,
+    l.city,
+    p.property_type,
+    p.bedrooms,
+    p.bathrooms,
+    pr.price,
+    pr.currency,
+    p.available,
+    p.status,
+    p.purpose,
+    COALESCE(
+        ARRAY_AGG(DISTINCT a.amenity)
+        FILTER (WHERE a.amenity IS NOT NULL),
+        '{}'::text[]
+    ) AS amenities
+FROM properties p
+JOIN locations l ON l.location_id = p.location_id
+JOIN prices pr ON pr.property_id = p.property_id
+LEFT JOIN amenities a ON a.property_id = p.property_id
+WHERE p.status = 'Historical'
+  AND pr.verification_status = 'Historical'
+  AND (%(budget)s::numeric IS NULL OR pr.price <= %(budget)s::numeric)
+  AND (%(city)s::text IS NULL OR LOWER(l.city) = LOWER(%(city)s::text))
+  AND (%(area)s::text IS NULL OR LOWER(l.area) LIKE LOWER(%(area_pattern)s::text))
+  AND (%(bedrooms)s::integer IS NULL OR p.bedrooms = %(bedrooms)s::integer)
+  AND (%(property_type)s::text IS NULL OR LOWER(p.property_type) = LOWER(%(property_type)s::text))
+  AND (%(purpose)s::text IS NULL OR LOWER(p.purpose) = LOWER(%(purpose)s::text))
+  AND (
+      %(amenities)s::text[] IS NULL
+      OR NOT EXISTS (
+          SELECT 1
+          FROM unnest(%(amenities)s::text[]) AS requested_amenity
+          WHERE NOT EXISTS (
+              SELECT 1
+              FROM amenities property_amenity
+              WHERE property_amenity.property_id = p.property_id
+                AND LOWER(property_amenity.amenity) = LOWER(requested_amenity)
+          )
+      )
+  )
+GROUP BY
+    p.property_id, p.name, l.area, l.city, p.property_type,
+    p.bedrooms, p.bathrooms, pr.price, pr.currency, p.available,
+    p.status, p.purpose
+ORDER BY p.property_id
+LIMIT %(limit)s OFFSET %(offset)s;
+
+-- QUERY: browse_catalog_property
+SELECT
+    p.property_id,
+    p.name AS property_name,
+    l.area,
+    l.city,
+    p.property_type,
+    p.bedrooms,
+    p.bathrooms,
+    pr.price,
+    pr.currency,
+    p.available,
+    p.status,
+    p.purpose
+FROM properties p
+JOIN locations l ON l.location_id = p.location_id
+JOIN prices pr ON pr.property_id = p.property_id
+WHERE p.property_id = %(property_id)s::text
+  AND p.status = 'Historical'
+  AND pr.verification_status = 'Historical';
 
 -- ============================================================
 -- QUERY: availability
