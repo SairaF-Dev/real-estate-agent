@@ -216,7 +216,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-     <main>
+   <main style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         {pathname !== "/start" && (
           <header className="topbar">
             <div>
@@ -233,7 +233,22 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
         )}
-        <div className="page">{children}</div>
+        <div
+          className="page"
+          style={
+            pathname === "/start"
+              ? {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                  padding: "40px 60px",
+                }
+              : undefined
+          }
+        >
+          {children}
+        </div>
       </main>
     </div>
   );
