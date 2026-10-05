@@ -233,7 +233,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
               backdropFilter: "blur(6px)",
             }}
           >
-            Week 8 record
+            Verified
           </span>
 
           {/* Bottom-left: Property Type overlay chip */}
