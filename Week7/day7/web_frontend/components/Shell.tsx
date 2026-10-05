@@ -85,10 +85,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25))",
             }}
           />
-          <div>
-            Real Estate Hub
-            {/* <small>PROPERTY LISTINGS</small> */}
-          </div>
+          <div>Real Estate Hub</div>
         </Link>
 
         {/* Active Role Switcher */}
@@ -216,23 +213,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-   <main style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        {pathname !== "/start" && (
-          <header className="topbar">
-            <div>
-              <small>
-                {role === "sales_agent" ? "AGENT DASHBOARD" : "MARKETPLACE"}
-              </small>
-              <b>
-                {role === "sales_agent"
-                  ? "Agent Workspace"
-                  : customer
-                  ? `Welcome back, ${customer.full_name?.split(" ")[0]}`
-                  : "Properties"}
-              </b>
-            </div>
-          </header>
-        )}
+      <main style={{ minHeight: "100vh", overflowY: "auto" }}>
         <div
           className="page"
           style={
@@ -241,7 +222,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flex: 1,
+                  minHeight: "100vh",
                   padding: "40px 60px",
                 }
               : undefined
