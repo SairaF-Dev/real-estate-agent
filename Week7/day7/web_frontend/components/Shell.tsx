@@ -216,24 +216,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main>
-        <header className="topbar">
-          <div>
-            <small>
-              {role === "sales_agent" ? "AGENT DASHBOARD" : "PAKISTAN REAL ESTATE"}
-            </small>
-            <b>
-              {role === "sales_agent"
-                ? "Agent Workspace"
-                : customer
-                ? `Welcome back, ${customer.full_name?.split(" ")[0]}`
-                : "Explore Properties"}
-            </b>
-          </div>
-          <span style={{ fontSize: "0.85rem", color: "#6e827b" }}>
-            ● Verified Listings
-          </span>
-        </header>
+     <main>
+        {pathname !== "/start" && (
+          <header className="topbar">
+            <div>
+              <small>
+                {role === "sales_agent" ? "AGENT DASHBOARD" : "MARKETPLACE"}
+              </small>
+              <b>
+                {role === "sales_agent"
+                  ? "Agent Workspace"
+                  : customer
+                  ? `Welcome back, ${customer.full_name?.split(" ")[0]}`
+                  : "Properties"}
+              </b>
+            </div>
+          </header>
+        )}
         <div className="page">{children}</div>
       </main>
     </div>
