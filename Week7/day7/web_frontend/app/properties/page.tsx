@@ -110,10 +110,7 @@ export default function Properties() {
         <span className="eyebrow">PROPERTY LISTINGS</span>
         <h1>Explore Properties</h1>
         <p>
-          Browse property listings from across Pakistan and explore indicative price insights.
-        </p>
-        <p role="note" style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", borderRadius: "8px", background: "#fff8e7", color: "#72521d", fontSize: "0.9rem" }}>
-          Prices and availability may have changed. Please confirm the latest details before making a decision.
+          Browse property records from Pakistan&apos;s Week 8 catalog and explore dataset-derived market insights.
         </p>
       </div>
 

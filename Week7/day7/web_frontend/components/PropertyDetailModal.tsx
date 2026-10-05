@@ -423,9 +423,9 @@ export function PropertyDetailModal({
                   padding: "10px 12px",
                 }}
               >
-                <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>Availability</div>
-                <div style={{ fontSize: "0.95rem", fontWeight: 700, color: property.available ? "#16a34a" : "#b91c1c", marginTop: "2px" }}>
-                  {property.available ? "Available" : "Please confirm"}
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>Dataset</div>
+                <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--ink)", marginTop: "2px" }}>
+                  Week 8 property catalog
                 </div>
               </div>
 
