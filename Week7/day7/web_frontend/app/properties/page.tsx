@@ -117,13 +117,13 @@ export default function Properties() {
       <form className="search-bar" onSubmit={handleSubmit}>
         <input
           name="city"
-          placeholder="City (e.g. Lahore, Karachi, Islamabad)"
+          placeholder="City"
           value={city}
           onChange={(e) => setCity(e.target.value)}
         />
         <input
           name="area"
-          placeholder="Locality or Area (e.g. Gulberg, DHA)"
+          placeholder="Locality"
           value={area}
           onChange={(e) => setArea(e.target.value)}
         />
@@ -131,7 +131,7 @@ export default function Properties() {
           name="budget_max"
           type="number"
           min="0"
-          placeholder="Maximum budget (PKR)"
+          placeholder="Maximum budget"
           value={budgetMax}
           onChange={(e) => setBudgetMax(e.target.value)}
         />
