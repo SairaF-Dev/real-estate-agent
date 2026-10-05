@@ -85,15 +85,38 @@ export function Shell({ children }: { children: React.ReactNode }) {
               filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25))",
             }}
           />
-          <div>Real Estate Hub<small>PROPERTY LISTINGS</small></div>
+          <div>
+            Real Estate Hub
+            <small>PROPERTY LISTINGS</small>
+          </div>
         </Link>
 
-        {/* Prominent Active Role Switcher */}
-        <div style={{ marginTop: "18px", marginBottom: "6px", display: "grid", gap: "6px" }} data-testid="role-switcher">
-          <span style={{ fontSize: "0.65rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "#c28b4b", fontWeight: 700 }}>
-            Active Role
+        {/* Active Role Switcher */}
+        <div
+          style={{ marginTop: "18px", marginBottom: "6px", display: "grid", gap: "6px" }}
+          data-testid="role-switcher"
+        >
+          <span
+            style={{
+              fontSize: "0.65rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "#c28b4b",
+              fontWeight: 700,
+            }}
+          >
+            Workspace
           </span>
-          <div style={{ display: "flex", background: "#102520", borderRadius: "8px", padding: "3px", border: "1px solid #36564f", gap: "4px" }}>
+          <div
+            style={{
+              display: "flex",
+              background: "#102520",
+              borderRadius: "8px",
+              padding: "3px",
+              border: "1px solid #36564f",
+              gap: "4px",
+            }}
+          >
             <button
               type="button"
               onClick={() => handleRoleChange("customer")}
@@ -130,7 +153,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 transition: "all 0.15s ease",
               }}
             >
-              Sales Agent
+              Agent Portal
             </button>
           </div>
         </div>
@@ -143,25 +166,52 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        {/* Clean Session Card with NO redundant Active Role text */}
-        <div className="session-card" style={{ marginTop: "auto", paddingTop: "14px", paddingBottom: "32px", display: "grid", gap: "6px" }}>
-          <small>My Account</small>
-          <strong>{customer?.full_name || "Not selected"}</strong>
-          {customer && (
+        {/* Session Card */}
+        <div
+          className="session-card"
+          style={{
+            marginTop: "auto",
+            paddingTop: "14px",
+            paddingBottom: "32px",
+            display: "grid",
+            gap: "4px",
+          }}
+        >
+          <small style={{ color: "#9fb8b1", fontSize: "0.75rem" }}>Account</small>
+          <strong style={{ fontSize: "0.9rem", color: "#f3ede2" }}>
+            {customer?.full_name || "Guest User"}
+          </strong>
+
+          {customer ? (
             <button
+              type="button"
               className="link-button"
               onClick={switchCustomer}
               style={{
-                padding: "6px 0",
+                padding: "4px 0",
                 color: "#e5c395",
-                fontSize: "0.85rem",
+                fontSize: "0.8rem",
                 cursor: "pointer",
                 display: "inline-block",
+                textAlign: "left",
+                background: "none",
+                border: "none",
+              }}
+            >
+              Sign Out
+            </button>
+          ) : (
+            <Link
+              href="/start"
+              style={{
+                color: "#e5c395",
+                fontSize: "0.8rem",
+                textDecoration: "none",
                 marginTop: "2px",
               }}
             >
-              Switch customer
-            </button>
+              Sign In →
+            </Link>
           )}
         </div>
       </aside>
@@ -169,10 +219,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main>
         <header className="topbar">
           <div>
-            <small>{role === "sales_agent" ? "SALES AGENT WORKSPACE" : "PROPERTY SEARCH"}</small>
-            <b>{role === "sales_agent" ? "Agent Console" : (customer ? `Welcome, ${customer.full_name?.split(" ")[0] || "Customer"}` : "Development session")}</b>
+            <small>
+              {role === "sales_agent" ? "AGENT DASHBOARD" : "PAKISTAN REAL ESTATE"}
+            </small>
+            <b>
+              {role === "sales_agent"
+                ? "Agent Workspace"
+                : customer
+                ? `Welcome back, ${customer.full_name?.split(" ")[0]}`
+                : "Explore Properties"}
+            </b>
           </div>
-          <span>● Property listings</span>
+          <span style={{ fontSize: "0.85rem", color: "#6e827b" }}>
+            ● Verified Listings
+          </span>
         </header>
         <div className="page">{children}</div>
       </main>
