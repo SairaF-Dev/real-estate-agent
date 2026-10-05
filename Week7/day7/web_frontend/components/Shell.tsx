@@ -87,7 +87,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           />
           <div>
             Real Estate Hub
-            <small>PROPERTY LISTINGS</small>
+            {/* <small>PROPERTY LISTINGS</small> */}
           </div>
         </Link>
 
