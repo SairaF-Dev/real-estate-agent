@@ -143,7 +143,6 @@ function PropertyIllustration({ type }: { type: string }) {
     );
   }
 
-  // Default House / Villa
   return (
     <svg width="62" height="62" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="House illustration">
       <path d="M32 8L7 28H15V54C15 55.1 15.9 56 17 56H47C48.1 56 49 55.1 49 54V28H57L32 8Z" fill="#cbe2d5" stroke="#214e43" strokeWidth="2.5" strokeLinejoin="round" />
@@ -163,12 +162,27 @@ export function PropertyCard({ property, actions }: { property: Property; action
   const photoUrl = getPropertyPhoto(property.property_type, property.property_id);
   const priceFormatted = formatPakistaniPrice(property.price);
 
+  const isRental = property.purpose?.toLowerCase() === "rental";
   const purposeLabel =
     property.purpose === "purchase"
       ? "For Sale"
-      : property.purpose === "rental"
+      : isRental
       ? "For Rent"
       : property.purpose;
+
+  const bedroomsDisplay =
+    property.bedrooms != null && property.bedrooms > 0
+      ? `${property.bedrooms} Beds`
+      : property.property_type?.toLowerCase().includes("plot")
+      ? "Plot"
+      : property.property_type?.toLowerCase().includes("commercial")
+      ? "Commercial"
+      : "Studio";
+
+  const bathroomsDisplay =
+    property.bathrooms != null && property.bathrooms > 0
+      ? `${property.bathrooms} Baths`
+      : "—";
 
   return (
     <>
@@ -196,23 +210,32 @@ export function PropertyCard({ property, actions }: { property: Property; action
                 loading="lazy"
                 onError={() => setHasError(true)}
               />
-              {/* Dual gradient overlay for crisp badge readability */}
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(180deg, rgba(17,35,30,0.5) 0%, transparent 42%, rgba(17,35,30,0.6) 100%)",
+                  background:
+                    "linear-gradient(180deg, rgba(17,35,30,0.5) 0%, transparent 42%, rgba(17,35,30,0.6) 100%)",
                   pointerEvents: "none",
                 }}
               />
             </>
           ) : (
-            <div style={{ margin: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 0 4px" }}>
+            <div
+              style={{
+                margin: "auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "12px 0 4px",
+              }}
+            >
               <PropertyIllustration type={property.property_type} />
             </div>
           )}
 
-          {/* Top-left: dataset source pill */}
+          {/* Top-left: Verified badge */}
           <span
             style={{
               position: "relative",
@@ -297,7 +320,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
               </span>
             </div>
 
-            {/* Title - Clean 2-line clamp with full width */}
+            {/* Title */}
             <h3
               style={{
                 font: '600 1.15rem/1.3 "Playfair Display", serif',
@@ -318,7 +341,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
               {property.property_name}
             </h3>
 
-            {/* Dedicated Smart Price Row */}
+            {/* Price Row with /month indicator for rentals */}
             <div
               style={{
                 display: "flex",
@@ -341,6 +364,11 @@ export function PropertyCard({ property, actions }: { property: Property; action
                 }}
               >
                 {priceFormatted.compact}
+                {isRental && (
+                  <span style={{ fontSize: "0.82rem", fontWeight: 500, color: "#6e827b" }}>
+                    {" "}/ mo
+                  </span>
+                )}
               </span>
               {priceFormatted.compact !== priceFormatted.exact && (
                 <span
@@ -352,12 +380,12 @@ export function PropertyCard({ property, actions }: { property: Property; action
                   }}
                   title={priceFormatted.exact}
                 >
-                  ({priceFormatted.exact})
+                  ({priceFormatted.exact}{isRental ? " / mo" : ""})
                 </span>
               )}
             </div>
 
-            {/* Feature Badges with Mini SVG Icons */}
+            {/* Feature Badges */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               <span
                 style={{
@@ -374,7 +402,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
                 }}
               >
                 <BedIcon />
-                <span>{property.bedrooms != null ? `${property.bedrooms} Beds` : "Studio"}</span>
+                <span>{bedroomsDisplay}</span>
               </span>
 
               <span
@@ -392,7 +420,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
                 }}
               >
                 <BathIcon />
-                <span>{property.bathrooms != null ? `${property.bathrooms} Baths` : "—"}</span>
+                <span>{bathroomsDisplay}</span>
               </span>
 
               <span
@@ -439,7 +467,7 @@ export function PropertyCard({ property, actions }: { property: Property; action
           </div>
 
           <div>
-            {/* Footer: Reference ID & View Details (Clean, full-width row for ALL cards) */}
+            {/* Footer: Reference ID & View Details */}
             <div
               style={{
                 display: "flex",
@@ -476,7 +504,6 @@ export function PropertyCard({ property, actions }: { property: Property; action
               </button>
             </div>
 
-            {/* Dedicated Actions section when actions prop is passed (e.g. Recommendations / Sara chat) */}
             {actions && (
               <div
                 className="card-actions"
@@ -495,7 +522,6 @@ export function PropertyCard({ property, actions }: { property: Property; action
         </div>
       </article>
 
-      {/* Grounded Detail Modal */}
       {showDetails && (
         <PropertyDetailModal
           property={property}
