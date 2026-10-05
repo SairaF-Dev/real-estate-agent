@@ -47,7 +47,7 @@ export default function Start() {
   return (
     <section className="onboarding">
       <div>
-        <span className="eyebrow">MEMBER PORTAL</span>
+        {/* <span className="eyebrow"></span> */}
         <h1>
           Your next address
           <br />
