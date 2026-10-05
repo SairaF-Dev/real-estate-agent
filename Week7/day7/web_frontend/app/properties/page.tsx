@@ -110,7 +110,7 @@ export default function Properties() {
         <span className="eyebrow">PROPERTY LISTINGS</span>
         <h1>Explore Properties</h1>
         <p>
-          Browse property records from Pakistan&apos;s Week 8 catalog and explore dataset-derived market insights.
+          Explore verified listings across Pakistan and find your ideal property at the right price.
         </p>
       </div>
 
