@@ -184,4 +184,4 @@ Day 5 operations and deployment instructions are in [`docs/day5/operations.md`](
 
 The serving Docker image installs only inference dependencies from `requirements-api.txt`; the full `requirements.txt` remains available for development, testing, and model training.
 
-The repository-root GitHub Actions workflow runs the Week 8 Python tests and builds the Docker image on pushes and pull requests affecting Week 8. A public deployment, 10-minute demo recording and slide deck still need to be prepared for the final handover.
+
