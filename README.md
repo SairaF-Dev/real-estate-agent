@@ -215,18 +215,6 @@ Data sources: property listings are based on public Zameen.com data (Kaggle). Le
 
 ---
 
-## Limitations
-
-- The included models do not guarantee valuation accuracy or production availability.
-- Lead scoring is trained on simulated data and is not a production model.
-- External appointment side effects (Calendar, email) and local state are not atomic. Check appointment status before retrying an interrupted booking.
-- Live voice and provider delivery require separate validation.
-- The Docker image has not been built in the original development environment.
-
-Review the deployment guide limitations before exposing the services to customers.
-
----
-
 ## Author
 
 **Saira Fatima**
