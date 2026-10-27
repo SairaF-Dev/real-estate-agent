@@ -2,3 +2,6 @@
 pythonpath = [".", "src"]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.vercel]
+entrypoint = "src.api.app:app"
